@@ -19,25 +19,6 @@ from investhor.utils import save_config_file
 CONFIG_FILE = "sell_stale.json"
 
 
-def get_cli_parser(defaults):
-    """Creates a cli parser using argparse
-    """
-    parser = argparse.ArgumentParser(description='Bondora investing script')
-
-    return parser
-
-
-def get_params(config_file):
-    """Gets the scripts params.
-       Resolution order is cli -> .config file -> parser defaults
-    """
-    defaults = load_config_file(config_file)
-    parser = get_cli_parser(defaults)
-    args = vars(parser.parse_args())
-    defaults.update(args)
-    return defaults
-
-
 def sell_items(secondary_api, results, cancel=False, rate=0):
     sell_requests = []
     for res in results.payload:
@@ -69,7 +50,7 @@ def sell_items_already_in_secondary(secondary_api, params):
     return sell_items(secondary_api, results, cancel=True)
 
 def main():
-    params = get_params(CONFIG_FILE)
+    params = load_config_file(CONFIG_FILE)
     request_params = params.copy()
     request_params = add_next_payment_day_filters(request_params)
     # Get only those that has next payment at least one month from now

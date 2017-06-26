@@ -1,0 +1,5 @@
+{
+    "request_interest_min": 201,
+    "request_sum_min": 1,
+    "request_sum_max": 20
+}

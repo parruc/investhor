@@ -26,11 +26,11 @@ def calculate_selling_discount(result):
     """ Calculates the discount based on investment interest and risk
     """
     if result.interest > 100:
-        discount = math.floor(interest/20)
+        discount = math.floor(result.interest/20)
     elif result.interest > 50:
-        discount = math.floor(interest/15)
+        discount = math.floor(result.interest/15)
     else:
-        discount = max(1, math.floor(interest/10))
+        discount = max(1, math.floor(result.interest/10))
     if result.income_verification_status == 4:
         discount += 2
     elif result.income_verification_status > 1:

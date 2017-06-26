@@ -54,6 +54,7 @@ setup(
     entry_points="""
     # -*- Entry points: -*-
     [console_scripts]
+    bondora_primary = investhor.scripts.invest_primary:main
     bondora_secondary = investhor.scripts.invest_secondary:main
     bondora_sell = investhor.scripts.sell_stale:main
     """,
