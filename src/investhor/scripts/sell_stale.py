@@ -14,6 +14,7 @@ from investhor.utils import calculate_selling_discount
 from investhor.utils import load_config_file
 from investhor.utils import oauth2_get_token
 from investhor.utils import save_config_file
+from investhor.utils import send_mail
 
 # from bondora_api.rest import ApiException
 CONFIG_FILE = "sell_stale.json"
@@ -21,15 +22,19 @@ CONFIG_FILE = "sell_stale.json"
 
 def sell_items(secondary_api, results, cancel=False, rate=0):
     sell_requests = []
+    messages = []
     for res in results.payload:
         if cancel:
             cancel_resut = secondary_api.second_market_cancel(id=res.id)
         sell_request = SecondMarketSell(loan_part_id=res.loan_part_id,
                                         desired_discount_rate=rate)
         sell_requests.append(sell_request)
-        logging.warning("Selling %s at 0%%", res.loan_part_id)
+        message = "Selling %s at 0%%", res.loan_part_id
+        messages.append(message)
+        logging.warning(message)
     if sell_requests:
         sell_request = SecondMarketSaleRequest(sell_requests)
+        send_mail("Selling stale", "\n".join(messages))
         return secondary_api.second_market_sell(sell_request)
 
 
@@ -39,14 +44,20 @@ def sell_items_not_in_secondary(secondary_api, params):
     request_params["request_sales_status"] = 3
     request_params["request_loan_status_code"] = 2
     results = account_api.account_get_active(**request_params)
-    pprint(results)
+    if results.payload:
+        pprint(results.payload)
+    else:
+        print("No item to sell at 0% in your account")
     return sell_items(secondary_api, results)
 
 def sell_items_already_in_secondary(secondary_api, params):
     request_params = params.copy()
     request_params["request_show_my_items"] = True
     results = secondary_api.second_market_get_active(**request_params)
-    pprint(results)
+    if results.payload:
+        pprint(results.payload)
+    else:
+        print("No item to sell at 0% in secondary market")
     return sell_items(secondary_api, results, cancel=True)
 
 def main():

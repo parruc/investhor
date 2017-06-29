@@ -14,6 +14,7 @@ from investhor.utils import calculate_selling_discount
 from investhor.utils import load_config_file
 from investhor.utils import oauth2_get_token
 from investhor.utils import save_config_file
+from investhor.utils import send_mail
 
 # from bondora_api.rest import ApiException
 CONFIG_FILE = "invest_secondary.json"
@@ -21,34 +22,42 @@ CONFIG_FILE = "invest_secondary.json"
 
 def buy_secondary(secondary_api, results, min_gain):
     to_buy = []
+    messages = []
     for res in results:
         target_discount = calculate_selling_discount(res)
         if target_discount - res.desired_discount_rate > min_gain:
             to_buy.append(res)
-            logging.warning("Buying %s at %d%%",
-                            res.loan_part_id, res.desired_discount_rate)
+            message = "Buying %s at %d%%" % (res.loan_part_id, res.desired_discount_rate)
+            messages.append(message)
+            logging.warning(message)
     if to_buy:
         buy_request = SecondMarketBuyRequest([buy.id for buy in to_buy])
-        import ipdb; ipdb.set_trace()
-        secondary_api.second_market_buy(buy_request)
-        pass
-    pprint(to_buy)
+        # secondary_api.second_market_buy(buy_request)
+        send_mail("Buying from secondary", "\n".join(messages))
+        pprint(to_buy)
+    else:
+        print("No item to buy in secondary")
     return to_buy
 
 
 def sell_secondary(secondary_api, results):
     to_sell = []
+    messages = []
     for res in results:
         target_discount = calculate_selling_discount(res)
         sell_request = SecondMarketSell(loan_part_id=res.loan_part_id,
                                         desired_discount_rate=target_discount)
         to_sell.append(sell_request)
-        logging.warning("Selling %s at %d%%",
-                        res.loan_part_id, target_discount)
+        message = "Selling %s at %d%%" % (res.loan_part_id, target_discount)
+        messages.append(message)
+        logging.warning(message)
     if to_sell:
         sell_request = SecondMarketSaleRequest(to_sell)
-        results = secondary_api.second_market_sell(sell_request)
-    pprint(to_sell)
+        # results = secondary_api.second_market_sell(sell_request)
+        send_mail("Selling from secondary", "\n".join(messages))
+        pprint(to_sell)
+    else:
+        print("No item to sell in secondary")
     return to_sell
 
 

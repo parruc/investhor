@@ -1,12 +1,53 @@
 import datetime
+from email.message import EmailMessage
+from email.mime.text import MIMEText
+from email.utils import make_msgid
 import json
+import logging
 import math
 import os
+import smtplib
 
+from bondora_api import configuration as bondora_configuration
 from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 
 OAUTH_CONFIG_FILE = "oauth2.json"
+EMAIL_CONFIG_FILE = "email.json"
+
+
+def send_mail(subject, text):
+    params = load_config_file(EMAIL_CONFIG_FILE)
+    smtp_user = params.get("smtp_user", "")
+    smtp_pass = params.get("smtp_pass", "")
+    smtp_host = params.get("smtp_host", "")
+    smtp_port = params.get("smtp_port", "")
+    mail_to = params.get("mail_to", "")
+    if smtp_user and smtp_pass and smtp_host and smtp_port and mail_to:
+        mail_from = params.get("mail_from", smtp_user)
+        subject_prefix = params.get("subject_prefix", "")
+        if subject_prefix:
+            subject = subject_prefix + " " + subject
+        # Create the base text message.
+        msg = EmailMessage()
+        msg['Subject'] = subject
+        msg['From'] = mail_from
+        msg['To'] = [mail_to, ]
+        msg.set_content(text)
+        s = smtplib.SMTP_SSL(smtp_host + ":" + smtp_port)
+        s.login(smtp_user, smtp_pass)
+        s.sendmail(mail_from, mail_to, msg.as_string())
+        s.quit()
+    else:
+        logging.error("Cannot send email, some param missing")
+
+
+def get_request_params(params):
+    request_params = params.copy()
+    # Get only those that has next payment at least one month from now
+    request_params = add_next_payment_day_filters(request_params)
+    request_params = {k: v for k, v in request_params.items() if k.startswith("request_")}
+    return request_params
 
 
 def get_config_file_path(file_name):
@@ -58,6 +99,16 @@ def add_next_payment_day_filters(params):
         params["request_next_payment_date_to"] = future_date.isoformat()
         del(params["max_days_till_next_payment"])
     return params
+
+
+def config(debug=False):
+    """Requests and sets up the token and other config params
+    """
+    auth_token = oauth2_get_token()
+    if debug:
+        bondora_api.configuration.debug = True
+    bondora_configuration.access_token = auth_token
+    bondora_configuration.host = "https://api.bondora.com"
 
 
 def oauth2_get_token():

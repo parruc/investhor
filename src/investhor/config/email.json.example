@@ -1,0 +1,8 @@
+{
+    "smtp_user": "info@example.com",
+    "smtp_pass": "mypassword",
+    "smtp_host": "smtp.example.com",
+    "smtp_port": "465",
+    "mail_to": "my_email@example.com",
+    "subject_prefix": "[Investhor]"
+}

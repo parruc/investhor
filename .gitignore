@@ -3,6 +3,7 @@ src/investhor/config/oauth2.json
 src/investhor/config/invest_primary.json
 src/investhor/config/invest_secondary.json
 src/investhor/config/sell_stale.json
+src/investhor/config/email.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -1,5 +1,7 @@
 {
-    "request_interest_min": 201,
-    "request_sum_min": 1,
-    "request_sum_max": 20
+    "max_investment_per_loan": 50,
+    "min_bid": 1,
+    "max_bid": 20,
+    "min_gain": 5,
+    "request_interest_min": 201
 }
