@@ -1,4 +1,5 @@
-import datetime
+from datetime import datetime
+from datetime import timedelta
 from email.message import EmailMessage
 from email.mime.text import MIMEText
 from email.utils import make_msgid
@@ -89,13 +90,13 @@ def save_config_file(params, file_name):
 
 def add_next_payment_day_filters(params):
     if "min_days_till_next_payment" in params:
-        min_days = datetime.timedelta(params["min_days_till_next_payment"])
-        future_date = datetime.datetime.today() + min_days
+        min_days = timedelta(params["min_days_till_next_payment"])
+        future_date = datetime.today() + min_days
         params["request_next_payment_date_from"] = future_date.isoformat()
         del(params["min_days_till_next_payment"])
     if "max_days_till_next_payment" in params:
-        max_days = datetime.timedelta(params["max_days_till_next_payment"])
-        future_date = datetime.datetime.today() + max_days
+        max_days = timedelta(params["max_days_till_next_payment"])
+        future_date = datetime.today() + max_days
         params["request_next_payment_date_to"] = future_date.isoformat()
         del(params["max_days_till_next_payment"])
     return params
@@ -116,6 +117,8 @@ def oauth2_get_token():
     """
     params = load_config_file(OAUTH_CONFIG_FILE)
     oauth = OAuth2Session(params["client_id"], scope=params["scope"])
+    token_expires = datetime.utcfromtimestamp(params.get("expires_at", 0))
+    refresh = (token_expires - datetime.now()).days < 2
     if "access_token" not in params:
         authorization_url, state = oauth.authorization_url(params["auth_url"])
         print('Please go to %s and authorize access.' % authorization_url)
@@ -124,6 +127,13 @@ def oauth2_get_token():
             params["token_url"],
             authorization_response=authorization_response,
             client_secret=params["client_secret"])
+        params.update(token)
+        save_config_file(params, OAUTH_CONFIG_FILE)
+    elif refresh:
+        token = oauth.refresh_token(params["token_url"],
+                                    client_id=params["client_id"],
+                                    client_secret=params["client_secret"],
+                                    refresh_token=params["refresh_token"])
         params.update(token)
         save_config_file(params, OAUTH_CONFIG_FILE)
 
