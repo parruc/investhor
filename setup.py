@@ -27,7 +27,7 @@ import sys
 from setuptools import find_packages
 from setuptools import setup
 
-NAME = "investrhor"
+NAME = "investhor"
 VERSION = "1.0.0"
 
 # To install the library, run the following
@@ -47,7 +47,6 @@ setup(
     url="https://www.matteoparrucci.ir",
     keywords=["Investment script", "Bondora", "automatic investments"],
     install_requires=REQUIRES,
-    packages=find_packages('src'),
     package_dir={'': 'src'},
     include_package_data=True,
     long_description="""Script to buy and sell bondora investments""",
@@ -59,3 +58,4 @@ setup(
     bondora_sell = investhor.scripts.sell_stale:main
     """,
 )
+

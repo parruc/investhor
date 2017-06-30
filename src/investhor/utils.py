@@ -8,6 +8,7 @@ import logging
 import math
 import os
 import smtplib
+import sys
 
 from bondora_api import configuration as bondora_configuration
 from oauthlib.oauth2 import BackendApplicationClient
@@ -15,6 +16,17 @@ from requests_oauthlib import OAuth2Session
 
 OAUTH_CONFIG_FILE = "oauth2.json"
 EMAIL_CONFIG_FILE = "email.json"
+
+
+def get_logger():
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    return logger
 
 
 def send_mail(subject, text):

@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 import argparse
 import json
-import logging
-from pprint import pprint
 
 from bondora_api import AccountApi
 from bondora_api import SecondMarketApi
@@ -15,9 +13,11 @@ from investhor.utils import load_config_file
 from investhor.utils import oauth2_get_token
 from investhor.utils import save_config_file
 from investhor.utils import send_mail
+from investhor.utils import get_logger
 
 # from bondora_api.rest import ApiException
 CONFIG_FILE = "sell_stale.json"
+logger = get_logger()
 
 
 def sell_items(secondary_api, results, cancel=False, rate=0):
@@ -31,7 +31,7 @@ def sell_items(secondary_api, results, cancel=False, rate=0):
         sell_requests.append(sell_request)
         message = "Selling %s at 0%%", res.loan_part_id
         messages.append(message)
-        logging.warning(message)
+        logger.info(message)
     if sell_requests:
         sell_request = SecondMarketSaleRequest(sell_requests)
         send_mail("Selling stale", "\n".join(messages))
@@ -44,20 +44,16 @@ def sell_items_not_in_secondary(secondary_api, params):
     request_params["request_sales_status"] = 3
     request_params["request_loan_status_code"] = 2
     results = account_api.account_get_active(**request_params)
-    if results.payload:
-        pprint(results.payload)
-    else:
-        print("No item to sell at 0% in your account")
+    if not results.payload:
+        logger.info("No item to sell at 0% in your account")
     return sell_items(secondary_api, results)
 
 def sell_items_already_in_secondary(secondary_api, params):
     request_params = params.copy()
     request_params["request_show_my_items"] = True
     results = secondary_api.second_market_get_active(**request_params)
-    if results.payload:
-        pprint(results.payload)
-    else:
-        print("No item to sell at 0% in secondary market")
+    if not results.payload:
+        logger.info("No item to sell at 0% in secondary market")
     return sell_items(secondary_api, results, cancel=True)
 
 def main():

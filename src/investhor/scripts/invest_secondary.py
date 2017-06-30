@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 import argparse
 import json
-import logging
-from pprint import pprint
 
 from bondora_api import SecondMarketApi
 from bondora_api import configuration as bondora_configuration
@@ -15,10 +13,11 @@ from investhor.utils import load_config_file
 from investhor.utils import oauth2_get_token
 from investhor.utils import save_config_file
 from investhor.utils import send_mail
+from investhor.utils import get_logger
 
 # from bondora_api.rest import ApiException
 CONFIG_FILE = "invest_secondary.json"
-
+logger = get_logger()
 
 def buy_secondary(secondary_api, results, min_gain):
     to_buy = []
@@ -29,14 +28,13 @@ def buy_secondary(secondary_api, results, min_gain):
             to_buy.append(res)
             message = "Buying %s at %d%%" % (res.loan_part_id, res.desired_discount_rate)
             messages.append(message)
-            logging.warning(message)
+            logger.info(message)
     if to_buy:
         buy_request = SecondMarketBuyRequest([buy.id for buy in to_buy])
-        # secondary_api.second_market_buy(buy_request)
+        secondary_api.second_market_buy(buy_request)
         send_mail("Buying from secondary", "\n".join(messages))
-        pprint(to_buy)
     else:
-        print("No item to buy in secondary")
+        logger.info("No item to buy in secondary")
     return to_buy
 
 
@@ -50,14 +48,13 @@ def sell_secondary(secondary_api, results):
         to_sell.append(sell_request)
         message = "Selling %s at %d%%" % (res.loan_part_id, target_discount)
         messages.append(message)
-        logging.warning(message)
+        logger.info(message)
     if to_sell:
         sell_request = SecondMarketSaleRequest(to_sell)
-        # results = secondary_api.second_market_sell(sell_request)
+        results = secondary_api.second_market_sell(sell_request)
         send_mail("Selling from secondary", "\n".join(messages))
-        pprint(to_sell)
     else:
-        print("No item to sell in secondary")
+        logger.info("No item to sell in secondary")
     return to_sell
 
 

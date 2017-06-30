@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 import argparse
 import json
-import logging
-from pprint import pprint
 
 from bondora_api import AuctionApi
 from bondora_api import BidApi
@@ -19,9 +17,11 @@ from investhor.utils import get_request_params
 from investhor.utils import load_config_file
 from investhor.utils import save_config_file
 from investhor.utils import send_mail
+from investhor.utils import get_logger
 
 # from bondora_api.rest import ApiException
 CONFIG_FILE = "invest_primary.json"
+logger = get_logger()
 
 
 def buy_primary(bid_api, results, params):
@@ -32,26 +32,25 @@ def buy_primary(bid_api, results, params):
     min_amount = getattr(params, "min_bid", 1)
     min_gain = getattr(params, "min_gain", 5)
     for res in results:
+        target_discount = calculate_selling_discount(res)
         if target_discount - res.desired_discount_rate < min_gain:
             continue
         if res.user_bid_amount >= max_investment_per_loan:
             continue
         amount = min(max_amount, max_investment_per_loan - res.user_bid_amount)
-        target_discount = calculate_selling_discount(res)
         bid = Bid(auction_id=res.auction_id,
                   amount=amount,
                   min_amount=min_amount)
         to_bid.append(bid)
         message = "Buying %s at %d%%" % (res.loan_part_id, res.desired_discount_rate)
         messages.append(message)
-        logging.warning(message)
+        logger.info(message)
     if to_bid:
         bid_request = BidRequest([bid.id for bid in to_buy])
         results = bid_api.bid_make_bids(bid_request)
-        pprint(to_bid)
         send_mail("buying from primary", "\n".join(messages))
     else:
-        print("No item to buy in primary")
+        logger.info("No item to buy in primary")
     return to_bid
 
 
@@ -65,14 +64,13 @@ def sell_primary(secondary_api, results):
         to_sell.append(sell_request)
         message = "Selling %s at %d%%" % (res.loan_part_id, target_discount)
         messages.append(message)
-        logging.warning(message)
+        logger.info(message)
     if to_sell:
         sell_request = SecondMarketSaleRequest(to_sell)
         results = secondary_api.second_market_sell(sell_request)
-        pprint(results.payload)
         send_mail("Selling from primary", "\n".join(messages))
     else:
-        print("No item to sell from primary")
+        logger.info("No item to sell from primary")
     return to_sell
 
 
