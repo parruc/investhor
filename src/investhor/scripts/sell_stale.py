@@ -23,12 +23,11 @@ logger = get_logger()
 
 def sell_items(secondary_api, results, cancel=False, rate=0):
     sell_requests = []
-    cancel_requests = []
+    to_cancel = []
     messages = []
     for res in results.payload:
         if cancel:
-            cancel_request.append(res)
-            cancel_requests.append(cancel_request)
+            to_cancel.append(res)
         sell_request = SecondMarketSell(loan_part_id=res.loan_part_id,
                                         desired_discount_rate=rate)
         sell_requests.append(sell_request)
