@@ -31,7 +31,7 @@ def get_logger():
 
 def get_investment_url(res):
     base_url = "https://www.bondora.com/en/investments?search=search&InvestmentSearch.InvestmentNumberOnly="
-    investment_number = "%d-%d"(res.auction_number, res.auction_bid_number)
+    investment_number = "%d-%d" % (res.auction_number, res.auction_bid_number)
     return base_url + investment_number
 
 def send_mail(subject, text):
