@@ -5,6 +5,7 @@ import json
 from bondora_api import AccountApi
 from bondora_api import SecondMarketApi
 from bondora_api import configuration as bondora_configuration
+from bondora_api.models import SecondMarketCancelRequest
 from bondora_api.models import SecondMarketSaleRequest
 from bondora_api.models import SecondMarketSell
 from investhor.utils import add_next_payment_day_filters
@@ -22,16 +23,22 @@ logger = get_logger()
 
 def sell_items(secondary_api, results, cancel=False, rate=0):
     sell_requests = []
+    cancel_requests = []
     messages = []
     for res in results.payload:
         if cancel:
-            cancel_resut = secondary_api.second_market_cancel(id=res.id)
+            cancel_request.append(res)
+            cancel_requests.append(cancel_request)
         sell_request = SecondMarketSell(loan_part_id=res.loan_part_id,
                                         desired_discount_rate=rate)
         sell_requests.append(sell_request)
         message = "Selling %s at 0%%", res.loan_part_id
         messages.append(message)
         logger.info(message)
+    if to_cancel:
+        cancel_request = SecondMarketCancelRequest([c.id for c in to_cancel])
+        secondary_api.second_market_cancel_multiple(cancel_request)
+
     if sell_requests:
         sell_request = SecondMarketSaleRequest(sell_requests)
         send_mail("Selling stale", "\n".join(messages))
