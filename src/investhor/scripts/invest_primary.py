@@ -33,9 +33,11 @@ def buy_primary(bid_api, results, params):
     min_gain = getattr(params, "min_gain", 5)
     for res in results:
         target_discount = calculate_selling_discount(res)
-        if target_discount - res.desired_discount_rate < min_gain:
+        if target_discount < min_gain:
             continue
         if res.user_bid_amount >= max_investment_per_loan:
+            continue
+        if res.verification_type < 4:
             continue
         amount = min(max_amount, max_investment_per_loan - res.user_bid_amount)
         bid = Bid(auction_id=res.auction_id,
@@ -47,7 +49,7 @@ def buy_primary(bid_api, results, params):
         logger.info(message)
     if to_bid:
         bid_request = BidRequest([bid.id for bid in to_buy])
-        results = bid_api.bid_make_bids(bid_request)
+        # results = bid_api.bid_make_bids(bid_request)
         send_mail("buying from primary", "\n".join(messages))
     else:
         logger.info("No item to buy in primary")

@@ -10,7 +10,8 @@ from bondora_api.models import SecondMarketSell
 from investhor.utils import add_next_payment_day_filters
 from investhor.utils import calculate_selling_discount
 from investhor.utils import load_config_file
-from investhor.utils import oauth2_get_token
+from investhor.utils import config
+from investhor.utils import get_request_params
 from investhor.utils import save_config_file
 from investhor.utils import send_mail
 from investhor.utils import get_logger
@@ -24,11 +25,15 @@ def buy_secondary(secondary_api, results, min_gain):
     messages = []
     for res in results:
         target_discount = calculate_selling_discount(res)
-        if target_discount - res.desired_discount_rate > min_gain:
-            to_buy.append(res)
-            message = "Buying %s at %d%%" % (res.loan_part_id, res.desired_discount_rate)
-            messages.append(message)
-            logger.info(message)
+
+        if target_discount - res.desired_discount_rate < min_gain:
+            continue
+        if res.next_payment_nr > 1:
+            continue
+        to_buy.append(res)
+        message = "Buying %s at %d%%" % (res.loan_part_id, res.desired_discount_rate)
+        messages.append(message)
+        logger.info(message)
     if to_buy:
         buy_request = SecondMarketBuyRequest([buy.id for buy in to_buy])
         secondary_api.second_market_buy(buy_request)
@@ -60,17 +65,11 @@ def sell_secondary(secondary_api, results):
 
 def main():
     params = load_config_file(CONFIG_FILE)
-    request_params = params.copy()
-    # Get only those that has next payment at least one month from now
-    request_params = add_next_payment_day_filters(request_params)
-    # Configure OAuth2 access token for authorization: oauth2
-    # bondora_api.configuration.debug = True
-    auth_token = oauth2_get_token()
-    bondora_configuration.access_token = auth_token
-    bondora_configuration.host = "https://api.bondora.com"
+    request_params = get_request_params(params)
+    # Configure OAuth2 access token and other params
+    config()
     # create an instance of the API class
     secondary_api = SecondMarketApi()
-    request_params = {k: v for k, v in request_params.items() if k.startswith("request_")}
     results = secondary_api.second_market_get_active(**request_params).payload
     results = buy_secondary(secondary_api, results, params["min_percentage_overhead"])
     results = sell_secondary(secondary_api, results)
