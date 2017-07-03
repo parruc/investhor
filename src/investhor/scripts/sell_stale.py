@@ -49,10 +49,10 @@ def sell_items(secondary_api, results, cancel=False, calculate_rate=False):
 def sell_items_not_on_sale(secondary_api, params):
     account_api = AccountApi()
     request_params = params.copy()
-    if "request_next_payment_date_from" in params:
-        del(params["request_next_payment_date_from"])
-    if "request_next_payment_date_to" in params:
-        del(params["request_next_payment_date_to"])
+    if "request_next_payment_date_from" in request_params:
+        del(request_params["request_next_payment_date_from"])
+    if "request_next_payment_date_to" in request_params:
+        del(request_params["request_next_payment_date_to"])
     request_params["request_sales_status"] = 3
     request_params["request_loan_status_code"] = 2
     results = account_api.account_get_active(**request_params)
