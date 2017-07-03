@@ -11,40 +11,57 @@ from bondora_api.models import SecondMarketSell
 from investhor.utils import add_next_payment_day_filters
 from investhor.utils import calculate_selling_discount
 from investhor.utils import load_config_file
-from investhor.utils import oauth2_get_token
+from investhor.utils import config
 from investhor.utils import save_config_file
 from investhor.utils import send_mail
 from investhor.utils import get_logger
+from investhor.utils import get_request_params
 
 # from bondora_api.rest import ApiException
 CONFIG_FILE = "sell_stale.json"
 logger = get_logger()
 
 
-def sell_items(secondary_api, results, cancel=False, rate=0):
-    sell_requests = []
+def sell_items(secondary_api, results, cancel=False, calculate_rate=False):
+    to_sell = []
     to_cancel = []
     messages = []
     for res in results.payload:
+        rate = 0
+        if calculate_rate:
+            rate = calculate_selling_discount(res)
         if cancel:
             to_cancel.append(res)
-        sell_request = SecondMarketSell(loan_part_id=res.loan_part_id,
-                                        desired_discount_rate=rate)
-        sell_requests.append(sell_request)
-        message = "Selling %s at 0%%" % res.loan_part_id
+        to_sell.append(SecondMarketSell(loan_part_id=res.loan_part_id,
+                                        desired_discount_rate=rate))
+        message = "Selling %s at %d%%" % (res.loan_part_id, rate)
         messages.append(message)
         logger.info(message)
     if to_cancel:
         cancel_request = SecondMarketCancelRequest([c.id for c in to_cancel])
         secondary_api.second_market_cancel_multiple(cancel_request)
+    if to_sell:
+        sell_request = SecondMarketSaleRequest(to_sell)
+        results = secondary_api.second_market_sell(sell_request)
+    return to_sell
 
-    if sell_requests:
-        sell_request = SecondMarketSaleRequest(sell_requests)
-        send_mail("Selling stale", "\n".join(messages))
-        return secondary_api.second_market_sell(sell_request)
+
+def sell_items_not_on_sale(secondary_api, params):
+    account_api = AccountApi()
+    request_params = params.copy()
+    if "request_next_payment_date_from" in params:
+        del(params["request_next_payment_date_from"])
+    if "request_next_payment_date_to" in params:
+        del(params["request_next_payment_date_to"])
+    request_params["request_sales_status"] = 3
+    request_params["request_loan_status_code"] = 2
+    results = account_api.account_get_active(**request_params)
+    if not results.payload:
+        logger.info("No item to sell at market price in your account")
+    return sell_items(secondary_api, results, calculate_rate=True)
 
 
-def sell_items_not_in_secondary(secondary_api, params):
+def sell_stale_items_not_on_sale(secondary_api, params):
     account_api = AccountApi()
     request_params = params.copy()
     request_params["request_sales_status"] = 3
@@ -54,7 +71,7 @@ def sell_items_not_in_secondary(secondary_api, params):
         logger.info("No item to sell at 0% in your account")
     return sell_items(secondary_api, results)
 
-def sell_items_already_in_secondary(secondary_api, params):
+def sell_stale_items_on_sale(secondary_api, params):
     request_params = params.copy()
     request_params["request_show_my_items"] = True
     results = secondary_api.second_market_get_active(**request_params)
@@ -64,19 +81,14 @@ def sell_items_already_in_secondary(secondary_api, params):
 
 def main():
     params = load_config_file(CONFIG_FILE)
-    request_params = params.copy()
-    request_params = add_next_payment_day_filters(request_params)
-    # Get only those that has next payment at least one month from now
-    # Configure OAuth2 access token for authorization: oauth2
-    # bondora_api.configuration.debug = True
-    auth_token = oauth2_get_token()
-    bondora_configuration.access_token = auth_token
-    bondora_configuration.host = "https://api.bondora.com"
+    request_params = get_request_params(params)
+    # Configure OAuth2 access token and other params
+    config()
     # create an instance of the API class
-
     secondary_api = SecondMarketApi()
-    results = sell_items_not_in_secondary(secondary_api, request_params)
-    results = sell_items_already_in_secondary(secondary_api, request_params)
+    results = sell_stale_items_not_on_sale(secondary_api, request_params)
+    results = sell_items_not_on_sale(secondary_api, request_params)
+    results = sell_stale_items_on_sale(secondary_api, request_params)
     save_config_file(params, CONFIG_FILE)
 
 
