@@ -31,7 +31,7 @@ def sell_items(secondary_api, results, cancel=False, rate=0):
         sell_request = SecondMarketSell(loan_part_id=res.loan_part_id,
                                         desired_discount_rate=rate)
         sell_requests.append(sell_request)
-        message = "Selling %s at 0%%", res.loan_part_id
+        message = "Selling %s at 0%%" % res.loan_part_id
         messages.append(message)
         logger.info(message)
     if to_cancel:
