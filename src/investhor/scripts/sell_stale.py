@@ -87,8 +87,8 @@ def main():
     # create an instance of the API class
     secondary_api = SecondMarketApi()
     results = sell_stale_items_not_on_sale(secondary_api, request_params)
-    results = sell_items_not_on_sale(secondary_api, request_params)
     results = sell_stale_items_on_sale(secondary_api, request_params)
+    results = sell_items_not_on_sale(secondary_api, request_params)
     save_config_file(params, CONFIG_FILE)
 
 
