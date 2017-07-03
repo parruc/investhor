@@ -31,7 +31,8 @@ def buy_secondary(secondary_api, results, min_gain):
         if res.next_payment_nr > 1:
             continue
         to_buy.append(res)
-        message = "Buying %s at %d%%" % (res.loan_part_id, res.desired_discount_rate)
+        message = "Buying %s at %d%%" % (get_investment_url(res),
+                                         res.desired_discount_rate)
         messages.append(message)
         logger.info(message)
     if to_buy:
@@ -51,7 +52,8 @@ def sell_secondary(secondary_api, results):
         sell_request = SecondMarketSell(loan_part_id=res.loan_part_id,
                                         desired_discount_rate=target_discount)
         to_sell.append(sell_request)
-        message = "Selling %s at %d%%" % (res.loan_part_id, target_discount)
+        message = "Selling %s at %d%%" % (get_investment_url(res),
+                                          target_discount)
         messages.append(message)
         logger.info(message)
     if to_sell:

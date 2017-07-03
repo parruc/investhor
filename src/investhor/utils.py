@@ -29,6 +29,11 @@ def get_logger():
     return logger
 
 
+def get_investment_url(res):
+    base_url = "https://www.bondora.com/en/investments?search=search&InvestmentSearch.InvestmentNumberOnly="
+    investment_number = "%d-%d"(res.auction_number, res.auction_bid_number)
+    return base_url + investment_number
+
 def send_mail(subject, text):
     params = load_config_file(EMAIL_CONFIG_FILE)
     smtp_user = params.get("smtp_user", "")

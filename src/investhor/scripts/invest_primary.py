@@ -18,6 +18,7 @@ from investhor.utils import load_config_file
 from investhor.utils import save_config_file
 from investhor.utils import send_mail
 from investhor.utils import get_logger
+from investhor.utils import get_investment_url
 
 # from bondora_api.rest import ApiException
 CONFIG_FILE = "invest_primary.json"
@@ -44,7 +45,8 @@ def buy_primary(bid_api, results, params):
                   amount=amount,
                   min_amount=min_amount)
         to_bid.append(bid)
-        message = "Buying %s at %d%%" % (res.loan_part_id, res.desired_discount_rate)
+        message = "Buying %s at %d%%" % (get_investment_url(res),
+                                         res.desired_discount_rate)
         messages.append(message)
         logger.info(message)
     if to_bid:
@@ -64,7 +66,8 @@ def sell_primary(secondary_api, results):
         sell_request = SecondMarketSell(loan_part_id=res.loan_part_id,
                                         desired_discount_rate=target_discount)
         to_sell.append(sell_request)
-        message = "Selling %s at %d%%" % (res.loan_part_id, target_discount)
+        message = "Selling %s at %d%%" % (get_investment_url(res),
+                                          target_discount)
         messages.append(message)
         logger.info(message)
     if to_sell:

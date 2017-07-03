@@ -14,6 +14,7 @@ from investhor.utils import load_config_file
 from investhor.utils import config
 from investhor.utils import save_config_file
 from investhor.utils import send_mail
+from investhor.utils import get_investment_url
 from investhor.utils import get_logger
 from investhor.utils import get_request_params
 
@@ -34,7 +35,7 @@ def sell_items(secondary_api, results, cancel=False, calculate_rate=False):
             to_cancel.append(res)
         to_sell.append(SecondMarketSell(loan_part_id=res.loan_part_id,
                                         desired_discount_rate=rate))
-        message = "Selling %s at %d%%" % (res.loan_part_id, rate)
+        message = "Selling %s at %d%%" % (get_investment_url(res), rate)
         messages.append(message)
         logger.info(message)
     if to_cancel:
