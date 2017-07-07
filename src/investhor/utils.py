@@ -84,17 +84,22 @@ def load_config_file(file_name):
 def calculate_selling_discount(result):
     """ Calculates the discount based on investment interest and risk
     """
-    if result.interest > 100:
-        discount = math.floor(result.interest/20)
-    elif result.interest > 50:
-        discount = math.floor(result.interest/15)
-    else:
-        discount = max(1, math.floor(result.interest/10))
+    divider = 14
+    diff = 0
     if result.income_verification_status == 4:
-        discount += 2
+        diff = 2
     elif result.income_verification_status > 1:
-        discount += 1
-    return discount
+        diff = 1
+    if result.interest > 100:
+       divider = 20
+    elif result.interest > 50:
+       divider = 17
+       diff = math.floor(diff/2)
+    else:
+        diff = 0
+
+    discount = math.floor(result.interest/divider) + diff
+    return max(1, discount)
 
 
 def save_config_file(params, file_name):

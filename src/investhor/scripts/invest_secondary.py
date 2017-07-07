@@ -15,6 +15,7 @@ from investhor.utils import get_request_params
 from investhor.utils import save_config_file
 from investhor.utils import send_mail
 from investhor.utils import get_logger
+from investhor.utils import get_investment_url
 
 # from bondora_api.rest import ApiException
 CONFIG_FILE = "invest_secondary.json"
