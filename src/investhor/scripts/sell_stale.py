@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 import json
+import time
 
 from bondora_api import AccountApi
 from bondora_api import SecondMarketApi
@@ -23,73 +24,73 @@ CONFIG_FILE = "sell_stale.json"
 logger = get_logger()
 
 
-def sell_items(secondary_api, results, cancel=False, calculate_rate=False):
+def sell_items(secondary_api, results, on_sale, discount):
     to_sell = []
     to_cancel = []
+    str_discount = (1 - discount) * 100
     messages = []
     for res in results.payload:
-        rate = 0
-        if calculate_rate:
-            rate = calculate_selling_discount(res)
-        if cancel:
-            to_cancel.append(res)
-        to_sell.append(SecondMarketSell(loan_part_id=res.loan_part_id,
-                                        desired_discount_rate=rate))
-        message = "Selling %s at %d%%" % (get_investment_url(res), rate)
-        messages.append(message)
-        logger.info(message)
+        is_on_sale = False
+        rate = calculate_selling_discount(res, discount=discount)
+        for sale in on_sale.payload:
+            if sale.loan_part_id == res.loan_part_id:
+                is_on_sale = True
+                if sale.desired_discount_rate != rate:
+                    to_cancel.append(sale.id)
+                    to_sell.append(SecondMarketSell(loan_part_id=res.loan_part_id,
+                                   desired_discount_rate=rate))
+                    message = "Cancelling and selling %s at %d%%" % (get_investment_url(res), rate)
+                    messages.append(message)
+                    logger.info(message)
+                break;
+        if not is_on_sale:
+            to_sell.append(SecondMarketSell(loan_part_id=res.loan_part_id,
+                           desired_discount_rate=rate))
+            message = "Selling %s at %d%%" % (get_investment_url(res), rate)
+            messages.append(message)
+            logger.info(message)
     if to_cancel:
-        cancel_request = SecondMarketCancelRequest([c.id for c in to_cancel])
-        secondary_api.second_market_cancel_multiple(cancel_request)
+        for chunk in [to_cancel[i:i+100] for i  in range(0, len(to_cancel), 100)]:
+            cancel_request = SecondMarketCancelRequest(to_cancel)
+            secondary_api.second_market_cancel_multiple(cancel_request)
+
     if to_sell:
-        sell_request = SecondMarketSaleRequest(to_sell)
-        results = secondary_api.second_market_sell(sell_request)
+        for chunk in [to_sell[i:i+100] for i  in range(0, len(to_sell), 100)]:
+            sell_request = SecondMarketSaleRequest(chunk)
+            results = secondary_api.second_market_sell(sell_request)
+            time.sleep(3)
+        send_mail("Selling with %d discount" % str_discount, "\n".join(messages))
+    else:
+        logger.info("No item to sell at %d%% discount in your account" % str_discount)
     return to_sell
 
 
-def sell_items_not_on_sale(secondary_api, params):
+def sell_items_in_account(secondary_api, params, discount):
     account_api = AccountApi()
     request_params = params.copy()
-    if "request_next_payment_date_from" in request_params:
-        del(request_params["request_next_payment_date_from"])
-    if "request_next_payment_date_to" in request_params:
-        del(request_params["request_next_payment_date_to"])
-    request_params["request_sales_status"] = 3
     request_params["request_loan_status_code"] = 2
     results = account_api.account_get_active(**request_params)
-    if not results.payload:
-        logger.info("No item to sell at market price in your account")
-    return sell_items(secondary_api, results, calculate_rate=True)
-
-
-def sell_stale_items_not_on_sale(secondary_api, params):
-    account_api = AccountApi()
-    request_params = params.copy()
-    request_params["request_sales_status"] = 3
-    request_params["request_loan_status_code"] = 2
-    results = account_api.account_get_active(**request_params)
-    if not results.payload:
-        logger.info("No item to sell at 0% in your account")
-    return sell_items(secondary_api, results)
-
-def sell_stale_items_on_sale(secondary_api, params):
     request_params = params.copy()
     request_params["request_show_my_items"] = True
-    results = secondary_api.second_market_get_active(**request_params)
-    if not results.payload:
-        logger.info("No item to sell at 0% in secondary market")
-    return sell_items(secondary_api, results, cancel=True)
+    on_sale = secondary_api.second_market_get_active(**request_params)
+    return sell_items(secondary_api, results, on_sale, discount)
 
 def main():
     params = load_config_file(CONFIG_FILE)
-    request_params = get_request_params(params)
     # Configure OAuth2 access token and other params
     config()
     # create an instance of the API class
     secondary_api = SecondMarketApi()
-    results = sell_stale_items_not_on_sale(secondary_api, request_params)
-    results = sell_stale_items_on_sale(secondary_api, request_params)
-    results = sell_items_not_on_sale(secondary_api, request_params)
+    for discount_name in ["full", "low_discount", "medium_discount", "high_discount", "free"]:
+        discount = params[discount_name]
+        for bound in ["max_days_till_next_payment", "min_days_till_next_payment"]:
+            if bound in params:
+                del(params[bound])
+            key = "_".join((bound, discount_name))
+            if key in params:
+                params[bound] = params[key]
+        request_params = get_request_params(params)
+        results = sell_items_in_account(secondary_api, request_params, discount)
     save_config_file(params, CONFIG_FILE)
 
 

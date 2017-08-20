@@ -32,8 +32,9 @@ def buy_secondary(secondary_api, results, min_gain):
         if res.next_payment_nr > 1:
             continue
         to_buy.append(res)
-        message = "Buying %s at %d%%" % (get_investment_url(res),
-                                         res.desired_discount_rate)
+        message = "Buying at %d%%:\n\t%s\n(%s)" % (res.desired_discount_rate,
+                                                   str(res),
+                                                   get_investment_url(res),)
         messages.append(message)
         logger.info(message)
     if to_buy:
@@ -60,9 +61,7 @@ def sell_secondary(secondary_api, results):
     if to_sell:
         sell_request = SecondMarketSaleRequest(to_sell)
         results = secondary_api.second_market_sell(sell_request)
-        send_mail("Selling from secondary", "\n".join(messages))
-    else:
-        logger.info("No item to sell in secondary")
+        # send_mail("Selling from secondary", "\n".join(messages))
     return to_sell
 
 

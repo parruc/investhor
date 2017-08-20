@@ -81,25 +81,31 @@ def load_config_file(file_name):
         return json.load(config_file)
 
 
-def calculate_selling_discount(result):
+def calculate_selling_discount(result, discount=0):
     """ Calculates the discount based on investment interest and risk
     """
-    divider = 14
+    divider = 25
     diff = 0
-    if result.income_verification_status == 4:
+    verification = getattr(result, "income_verification_status", None)
+    if not verification:
+        verification = getattr(result, "verification_type", None)
+    if verification == 4:
         diff = 2
-    elif result.income_verification_status > 1:
+    elif verification > 1:
         diff = 1
     if result.interest > 100:
-       divider = 20
+       pass
     elif result.interest > 50:
-       divider = 17
        diff = math.floor(diff/2)
     else:
         diff = 0
 
-    discount = math.floor(result.interest/divider) + diff
-    return max(1, discount)
+    selling_discount = math.floor(result.interest/divider) + diff
+    if discount > 0:
+        selling_discount = math.floor(selling_discount * (1 - discount))
+        if discount == 1:
+            return 0
+    return max(1, selling_discount)
 
 
 def save_config_file(params, file_name):

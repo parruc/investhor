@@ -18,7 +18,6 @@ from investhor.utils import load_config_file
 from investhor.utils import save_config_file
 from investhor.utils import send_mail
 from investhor.utils import get_logger
-from investhor.utils import get_investment_url
 
 # from bondora_api.rest import ApiException
 CONFIG_FILE = "invest_primary.json"
@@ -28,10 +27,10 @@ logger = get_logger()
 def buy_primary(bid_api, results, params):
     to_bid = []
     messages = []
-    max_investment_per_loan = getattr(params, "max_investment_per_loan", 50)
-    max_amount = getattr(params, "max_bid", 20)
-    min_amount = getattr(params, "min_bid", 1)
-    min_gain = getattr(params, "min_gain", 5)
+    max_investment_per_loan = params.get("max_investment_per_loan", 50)
+    max_amount = params.get("max_bid", 20)
+    min_amount = params.get("min_bid", 1)
+    min_gain = params.get("min_gain", 5)
     for res in results:
         target_discount = calculate_selling_discount(res)
         if target_discount < min_gain:
@@ -45,38 +44,16 @@ def buy_primary(bid_api, results, params):
                   amount=amount,
                   min_amount=min_amount)
         to_bid.append(bid)
-        message = "Buying %s at %d%%" % (get_investment_url(res),
-                                         res.desired_discount_rate)
+        message = "Bidding for:\n %s" % str(res)
         messages.append(message)
         logger.info(message)
     if to_bid:
-        bid_request = BidRequest([bid.id for bid in to_buy])
-        # results = bid_api.bid_make_bids(bid_request)
-        send_mail("buying from primary", "\n".join(messages))
+        bid_request = BidRequest(to_bid)
+        results = bid_api.bid_make_bids(bid_request)
+        send_mail("Bidding from primary", "\n".join(messages))
     else:
-        logger.info("No item to buy in primary")
+        logger.info("No item to bid for in primary")
     return to_bid
-
-
-def sell_primary(secondary_api, results):
-    to_sell = []
-    messages = []
-    for res in results:
-        target_discount = calculate_selling_discount(res)
-        sell_request = SecondMarketSell(loan_part_id=res.loan_part_id,
-                                        desired_discount_rate=target_discount)
-        to_sell.append(sell_request)
-        message = "Selling %s at %d%%" % (get_investment_url(res),
-                                          target_discount)
-        messages.append(message)
-        logger.info(message)
-    if to_sell:
-        sell_request = SecondMarketSaleRequest(to_sell)
-        results = secondary_api.second_market_sell(sell_request)
-        send_mail("Selling from primary", "\n".join(messages))
-    else:
-        logger.info("No item to sell from primary")
-    return to_sell
 
 
 def main():
@@ -89,8 +66,6 @@ def main():
     results = auction_api.auction_get_active(**request_params).payload
     bid_api = BidApi()
     results = buy_primary(bid_api, results, params)
-    secondary_api = SecondMarketApi()
-    results = sell_primary(secondary_api, results)
     save_config_file(params, CONFIG_FILE)
 
 
