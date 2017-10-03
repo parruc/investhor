@@ -1,23 +1,16 @@
 #!/usr/bin/env python
-import argparse
-import json
 
 from bondora_api import AuctionApi
 from bondora_api import BidApi
-from bondora_api import SecondMarketApi
 from bondora_api.models import Bid
 from bondora_api.models import BidRequest
-from bondora_api.models import SecondMarketBuyRequest
-from bondora_api.models import SecondMarketSaleRequest
-from bondora_api.models import SecondMarketSell
-from investhor.utils import add_next_payment_day_filters
 from investhor.utils import calculate_selling_discount
 from investhor.utils import config
+from investhor.utils import get_logger
 from investhor.utils import get_request_params
 from investhor.utils import load_config_file
 from investhor.utils import save_config_file
 from investhor.utils import send_mail
-from investhor.utils import get_logger
 
 # from bondora_api.rest import ApiException
 CONFIG_FILE = "invest_primary.json"

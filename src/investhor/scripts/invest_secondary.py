@@ -1,33 +1,32 @@
 #!/usr/bin/env python
-import argparse
-import json
 import operator
 
 from bondora_api import SecondMarketApi
-from bondora_api import configuration as bondora_configuration
 from bondora_api.models import SecondMarketBuyRequest
-from bondora_api.models import SecondMarketSaleRequest
-from bondora_api.models import SecondMarketSell
-from investhor.utils import add_next_payment_day_filters
 from investhor.utils import calculate_selling_discount
-from investhor.utils import load_config_file
 from investhor.utils import config
+from investhor.utils import get_investment_url
+from investhor.utils import get_logger
 from investhor.utils import get_request_params
+from investhor.utils import load_config_file
 from investhor.utils import save_config_file
 from investhor.utils import send_mail
-from investhor.utils import get_logger
-from investhor.utils import get_investment_url
 
 # from bondora_api.rest import ApiException
 CONFIG_FILE = "invest_secondary.json"
 logger = get_logger()
 
-def buy_secondary(secondary_api, results, min_gain):
+
+def buy_secondary(secondary_api, results, params):
     to_buy = []
     messages = []
+    min_gain = params.get("min_percentage_overhead", 6)
+    max_investment_per_loan = params.get("max_investment_per_loan", 50)
     for res in results:
         target_discount = calculate_selling_discount(res)
-
+        import ipdb; ipdb.set_trace()
+        if res.user_bid_amount >= max_investment_per_loan:
+            continue
         if target_discount - res.desired_discount_rate < min_gain:
             continue
         if res.next_payment_nr > 1:
@@ -49,25 +48,6 @@ def buy_secondary(secondary_api, results, min_gain):
     return to_buy
 
 
-def sell_secondary(secondary_api, results):
-    to_sell = []
-    messages = []
-    for res in results:
-        target_discount = calculate_selling_discount(res)
-        sell_request = SecondMarketSell(loan_part_id=res.loan_part_id,
-                                        desired_discount_rate=target_discount)
-        to_sell.append(sell_request)
-        message = "Selling %s at %d%%" % (get_investment_url(res),
-                                          target_discount)
-        messages.append(message)
-        logger.info(message)
-    if to_sell:
-        sell_request = SecondMarketSaleRequest(to_sell)
-        results = secondary_api.second_market_sell(sell_request)
-        # send_mail("Selling from secondary", "\n".join(messages))
-    return to_sell
-
-
 def main():
     params = load_config_file(CONFIG_FILE)
     request_params = get_request_params(params)
@@ -76,8 +56,7 @@ def main():
     # create an instance of the API class
     secondary_api = SecondMarketApi()
     results = secondary_api.second_market_get_active(**request_params).payload
-    results = buy_secondary(secondary_api, results, params["min_percentage_overhead"])
-    results = sell_secondary(secondary_api, results)
+    results = buy_secondary(secondary_api, results, params)
     save_config_file(params, CONFIG_FILE)
 
 
