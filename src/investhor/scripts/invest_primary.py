@@ -44,12 +44,13 @@ def buy_primary(bid_api, results, params):
                   amount=amount,
                   min_amount=min_amount)
         to_bid.append(bid)
-        message = "Bidding for:\n %s" % str(res)
-        messages.append(message)
-        logger.info(message)
     if to_bid:
         bid_request = BidRequest(to_bid)
-        results = bid_api.bid_make_bids(bid_request)
+        bids = bid_api.bid_make_bids(bid_request)
+        for b in bids:
+            message = "Bidding for:\n %s" % str(res)
+            messages.append(message)
+            logger.info(message)
         send_mail("Bidding from primary", "\n".join(messages))
     else:
         logger.info("No item to bid for in primary")

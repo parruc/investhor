@@ -37,7 +37,7 @@ VERSION = "1.0.0"
 # prerequisite: setuptools
 # http://pypi.python.org/pypi/setuptools
 
-REQUIRES = ["bondora_api", "requests-oauthlib"]
+REQUIRES = ["bondora_api", "requests-oauthlib", "pandas", "matplotlib", ]
 
 setup(
     name=NAME,
@@ -55,7 +55,8 @@ setup(
     [console_scripts]
     bondora_primary = investhor.scripts.invest_primary:main
     bondora_secondary = investhor.scripts.invest_secondary:main
-    bondora_sell = investhor.scripts.sell_stale:main
+    bondora_sell = investhor.scripts.sell:main
+    bondora_getdata = investhor.scripts.get_data:main
     """,
 )
 

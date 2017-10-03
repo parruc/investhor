@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 import json
+import operator
 
 from bondora_api import SecondMarketApi
 from bondora_api import configuration as bondora_configuration
@@ -32,14 +33,16 @@ def buy_secondary(secondary_api, results, min_gain):
         if res.next_payment_nr > 1:
             continue
         to_buy.append(res)
-        message = "Buying at %d%%:\n\t%s\n(%s)" % (res.desired_discount_rate,
-                                                   str(res),
-                                                   get_investment_url(res),)
-        messages.append(message)
-        logger.info(message)
     if to_buy:
+        to_buy.sort(key=operator.attrgetter('xirr', 'desired_discount_rate'))
         buy_request = SecondMarketBuyRequest([buy.id for buy in to_buy])
-        secondary_api.second_market_buy(buy_request)
+        bought = secondary_api.second_market_buy(buy_request)
+        for b in bought:
+            message = "Buying at %d%%:\n\t%s\n(%s)" % (b.desired_discount_rate,
+                                                       str(b),
+                                                       get_investment_url(b),)
+            messages.append(message)
+            logger.info(message)
         send_mail("Buying from secondary", "\n".join(messages))
     else:
         logger.info("No item to buy in secondary")

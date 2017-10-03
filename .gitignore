@@ -1,5 +1,6 @@
 # Sensitive data
 src/investhor/config/oauth2.json
+src/investhor/config/get_data.json
 src/investhor/config/invest_primary.json
 src/investhor/config/invest_secondary.json
 src/investhor/config/sell_stale.json
