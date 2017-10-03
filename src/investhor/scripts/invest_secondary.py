@@ -24,7 +24,6 @@ def buy_secondary(secondary_api, results, params):
     max_investment_per_loan = params.get("max_investment_per_loan", 50)
     for res in results:
         target_discount = calculate_selling_discount(res)
-        import ipdb; ipdb.set_trace()
         if res.user_bid_amount >= max_investment_per_loan:
             continue
         if target_discount - res.desired_discount_rate < min_gain:
