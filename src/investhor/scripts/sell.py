@@ -36,33 +36,35 @@ def sell_items(secondary_api, results, on_sale, discount):
                     to_sell.append(SecondMarketSell(
                         loan_part_id=res.loan_part_id,
                         desired_discount_rate=rate))
-                    message = "Cancelling and selling %s at %d%%" % (
-                        get_investment_url(res), rate)
-                    messages.append(message)
-                    logger.info(message)
                 break
         if not is_on_sale:
             to_sell.append(SecondMarketSell(loan_part_id=res.loan_part_id,
                            desired_discount_rate=rate))
-            message = "Selling %s at %d%%" % (get_investment_url(res), rate)
-            messages.append(message)
-            logger.info(message)
     if to_cancel:
         chunks = [to_cancel[i:i+100] for i in range(0, len(to_cancel), 100)]
         for chunk in chunks:
-            cancel_request = SecondMarketCancelRequest(to_cancel)
-            secondary_api.second_market_cancel_multiple(cancel_request)
+            cancel_req = SecondMarketCancelRequest(to_cancel)
+            results = secondary_api.second_market_cancel_multiple(cancel_req)
+            for res in results.payload:
+                msg = "Cancelling %s" % (get_investment_url(res))
+                logger.info(msg)
+                messages.append(msg)
             time.sleep(3)
 
     if to_sell:
         for chunk in [to_sell[i:i+100] for i in range(0, len(to_sell), 100)]:
-            sell_request = SecondMarketSaleRequest(chunk)
-            results = secondary_api.second_market_sell(sell_request)
+            sell_req = SecondMarketSaleRequest(chunk)
+            results = secondary_api.second_market_sell(sell_req)
+            for res in results.payload:
+                msg = "Selling %s at %d%%" % (get_investment_url(res), rate)
+                logger.info(msg)
+                messages.append(msg)
             time.sleep(3)
         send_mail("Selling with %d discount" % str_discount,
                   "\n".join(messages))
     else:
-        logger.info("No item to sell at %d%% discount in your account" % str_discount)
+        logger.info("No item to sell at %d%% discount in your account" %
+                    str_discount)
     return to_sell
 
 

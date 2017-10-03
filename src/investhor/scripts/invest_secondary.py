@@ -24,7 +24,6 @@ def buy_secondary(secondary_api, results, params):
     max_investment_per_loan = params.get("max_investment_per_loan", 50)
     for res in results:
         target_discount = calculate_selling_discount(res)
-        import ipdb; ipdb.set_trace()
         if res.user_bid_amount >= max_investment_per_loan:
             continue
         if target_discount - res.desired_discount_rate < min_gain:
@@ -36,7 +35,7 @@ def buy_secondary(secondary_api, results, params):
         to_buy.sort(key=operator.attrgetter('xirr', 'desired_discount_rate'))
         buy_request = SecondMarketBuyRequest([buy.id for buy in to_buy])
         bought = secondary_api.second_market_buy(buy_request)
-        for b in bought:
+        for b in bought.payload:
             message = "Buying at %d%%:\n\t%s\n(%s)" % (b.desired_discount_rate,
                                                        str(b),
                                                        get_investment_url(b),)

@@ -40,7 +40,7 @@ def buy_primary(bid_api, results, params):
     if to_bid:
         bid_request = BidRequest(to_bid)
         bids = bid_api.bid_make_bids(bid_request)
-        for b in bids:
+        for b in bids.payload:
             message = "Bidding for:\n %s" % str(res)
             messages.append(message)
             logger.info(message)
