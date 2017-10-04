@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import operator
 
+from bondora_api import AccountApi
 from bondora_api import SecondMarketApi
 from bondora_api.models import SecondMarketBuyRequest
 from investhor.utils import calculate_selling_discount
@@ -15,6 +16,20 @@ from investhor.utils import send_mail
 # from bondora_api.rest import ApiException
 CONFIG_FILE = "invest_secondary.json"
 logger = get_logger()
+users_investments = {}
+
+
+def get_investment_size_per_user(username):
+    total = users_investments.get(username, None)
+    if total is not None:
+        return total
+    total = 0
+    account_api = AccountApi()
+    results = account_api.account_get_active(request_user_name=username)
+    for result in results.payload:
+        total += result.amount
+    users_investments[username] = total
+    return total
 
 
 def buy_secondary(secondary_api, results, params):
@@ -24,11 +39,12 @@ def buy_secondary(secondary_api, results, params):
     max_investment_per_loan = params.get("max_investment_per_loan", 50)
     for res in results:
         target_discount = calculate_selling_discount(res)
-        if res.user_bid_amount >= max_investment_per_loan:
-            continue
         if target_discount - res.desired_discount_rate < min_gain:
             continue
         if res.next_payment_nr > 1:
+            continue
+        user_invested_amount = get_investment_size_per_user(res.user_name)
+        if user_invested_amount >= max_investment_per_loan:
             continue
         to_buy.append(res)
     if to_buy:
@@ -62,3 +78,4 @@ def main():
 if __name__ == "__main__":
     # execute only if run as a script
     main()
+
