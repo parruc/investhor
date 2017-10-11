@@ -45,10 +45,6 @@ def sell_items(secondary_api, results, on_sale, discount):
         for chunk in chunks:
             cancel_req = SecondMarketCancelRequest(to_cancel)
             results = secondary_api.second_market_cancel_multiple(cancel_req)
-            for res in results.payload:
-                msg = "Cancelling %s" % (get_investment_url(res))
-                logger.info(msg)
-                messages.append(msg)
             time.sleep(3)
 
     if to_sell:

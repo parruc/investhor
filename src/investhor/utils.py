@@ -1,8 +1,6 @@
 from datetime import datetime
 from datetime import timedelta
 from email.message import EmailMessage
-from email.mime.text import MIMEText
-from email.utils import make_msgid
 import json
 import logging
 import math
@@ -11,7 +9,6 @@ import smtplib
 import sys
 
 from bondora_api import configuration as bondora_configuration
-from oauthlib.oauth2 import BackendApplicationClient
 from requests_oauthlib import OAuth2Session
 
 OAUTH_CONFIG_FILE = "oauth2.json"
@@ -30,9 +27,15 @@ def get_logger():
 
 
 def get_investment_url(res):
-    base_url = "https://www.bondora.com/en/investments?search=search&InvestmentSearch.InvestmentNumberOnly="
-    investment_number = "%d-%d" % (res.auction_number, res.auction_bid_number)
-    return base_url + investment_number
+    host = "https://www.bondora.com"
+    path = "/en/investments"
+    args = "?search=search&InvestmentSearch.InvestmentNumberOnly=%s"
+    investment_number = getattr(res, "loan_part_id", None)
+    if not investment_number:
+        investment_number = "%d-%d" % (res.auction_number,
+                                       res.auction_bid_number)
+    return host + path + args % investment_number
+
 
 def send_mail(subject, text):
     params = load_config_file(EMAIL_CONFIG_FILE)
