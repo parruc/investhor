@@ -28,6 +28,9 @@ def sell_items(secondary_api, results, on_sale, discount):
     for res in results.payload:
         is_on_sale = False
         rate = calculate_selling_discount(res, discount=discount)
+        if rate is None:
+            logger.warning("RATE IS NULL WITH res=%s and discount=%d", res, discount)
+            continue
         for sale in on_sale.payload:
             if sale.loan_part_id == res.loan_part_id:
                 is_on_sale = True

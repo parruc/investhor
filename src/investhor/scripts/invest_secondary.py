@@ -37,14 +37,17 @@ def buy_secondary(secondary_api, results, params):
     messages = []
     min_gain = params.get("min_percentage_overhead", 6)
     max_investment_per_loan = params.get("max_investment_per_loan", 50)
+    user_invested_amounts = {}
     for res in results:
         target_discount = calculate_selling_discount(res)
         if target_discount - res.desired_discount_rate < min_gain:
             continue
         if res.next_payment_nr > 1:
             continue
-        user_invested_amount = get_investment_size_per_user(res.user_name)
-        if user_invested_amount >= max_investment_per_loan:
+        if res.user_name not in user_invested_amounts:
+            user_invested_amounts[res.user_name] = get_investment_size_per_user(res.user_name)
+        user_invested_amounts[res.user_name] += res.amount
+        if user_invested_amounts[res.user_name] >= max_investment_per_loan:
             continue
         to_buy.append(res)
     if to_buy:
