@@ -1,3 +1,9 @@
 {
-    "max_days_till_next_payment": 5
+  max_days_till_next_payment: 5,
+  no_discount: 0,
+  low_discount: 1,
+  medium_discount: 3,
+  high_discount: 5,
+  crazy_discount: 20,
+  total_discount: 50
 }
